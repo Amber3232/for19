@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
+
+ <!-- <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">  -->
+ <!--<link href="dist/bootstrap.css" rel="stylesheet">-->
+   <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+   <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+  <title>About 19th: Graduated</title>
+  <link rel="stylesheet" href="dist/webstyle.css">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<h1>毕业撒花</h1>
+<!--<img src="img/h1.png" />-->
+<p></p>
+<div id = "container">
+  <div id = "first">
+    <h2>少儿19班学业状态分布（2020年）</h2>
+    <p class="hint">点击查看具体信息</p>
+    <svg id = "pieChart">
+    </svg>
+    <div class ="tooltip">Tooltip</div>
+    <div id = "people"></div>
+    <div id = "pieName"></div>
+  </div>
+
+  <div>
+    <h2>少儿19班就读国家分布</h2>
+    <p class="hint">点击查看具体信息</p>
+    <p></p>
+    <svg id = "barChart"></svg>
+    <div id = "peopleBar"></div>
+    <div id = "barName"></div>
+  </div>
+
+  <div>
+    <h2>美国留学去向分布</h2>
+    <p class="hint">点击查看具体信息</p>
+    <p></p>
+    <svg id = "map"></svg>
+    <p id = "maphint" >注：美国地图部分地区未显示</p>
+  </div>
+
+  <div>
+    <h2>专业选择</h2>
+    <p></p>
+    <svg id = "sanKey"></svg>
+  </div>
+</div>
+<!-- partial -->
+  
+</body>
+  <script>
+
+function loadData(){
+      return Promise.all([
+        d3.csv("dist/future_19.csv"),
+        d3.json("dist/us-states-edited.json"),
+        d3.csv("dist/usuniversities.csv")
+      ]).then(datasets => {
+          futData = datasets[0];
+          geoJson = datasets[1];
+          usData = datasets[2]
+          console.log(geoJson)
+        })
+    }
+function showData() {
+      var future = groupByFuture(futData);
+      var country = groupByCountry(futData);
+      //var mapcolor = mapColor(usData)
+      //console.log(mapcolor)
+      drawPieChart(future)
+      drawBarChart(country)
+      drawMap(geoJson.features, usData)
+      //var subgroup = futData.columns.slice(1)
+      //console.log(subgroup)
+
+    }
+
+    loadData().then(showData);
+
+    var store = {}
+
+function groupByFuture(data){
+      var result = data.reduce((result, d) => {
+        let static = result[d.future] || {
+          "future": d.future,
+          "count": 0,
+          "name": []
+        }
+
+        static.count += 1
+        static.name.push(" " +d.name)
+/*
+        if (static.future === "本科"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.future === "读研"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.future === "读博"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.future === "Gap"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+*/       
+        result[d.future] = static
+        //console.log(result)
+        return result;
+      }, {})
+
+      result = Object.keys(result).map(key => result[key])
+
+      return result
+    }
+
+      var width = 400;
+      var height = 300;
+      var margin = {
+        top: 10,
+        bottom: 10,
+        left: 50,
+        right: 50
+      }
+
+      var bodyHeight = height - margin.top - margin.bottom
+      var bodyWidth = width - margin.left - margin.right
+
+function drawPieChart(data){
+
+
+      var container = d3.select("#pieChart")
+      container.attr("width", width)
+                .attr("height", height)
+
+
+      //var trydata = groupByFuture(data)
+      //console.log(trydata)
+
+      data = data.map(d => ({
+        future: d.future,
+        count: +d.count,
+        name: d.name
+        
+      }))
+      //console.log(data)
+
+      var arcGenerator = d3.arc().outerRadius(bodyHeight/2).innerRadius(100)
+
+      var pieGenerator = d3.pie().value(d => d.count)
+
+      //console.log(pieGenerator(data))
+
+      var arcData = pieGenerator(data)
+
+      var colorScale = d3.scaleOrdinal()
+      					.range(["#65a9cc", "#8accba", "#c28fb7", "#daa079"])
+      					.domain(data.map(d => d.future))
+
+      //console.log(colorScale("本科"))
+
+      container.selectAll(".arc")
+      			.data(arcData)
+      			.enter()
+      			.append("g")
+      			.append("path")
+      			.attr("d", arcGenerator)
+      			.attr("fill", d => {
+      				return colorScale(d.data.future)
+      			})
+      			//.style("filter", "url(#drop-shadow)")
+      			.attr("transform", "translate(" + width/2 +", " + height/2 + ")")
+      			.on("mouseover", function(d){
+      				d3.select(this)
+      				if (d.data.future === "本科") {
+      					
+      					this.style.fill = "#78b8da"
+      					text = "本科在读"
+      					
+      				}
+      				if (d.data.future === "读研") {
+      					//d3.select(this)
+      					this.style.fill = "#a0d5c7"
+      					text = "即将读研"
+
+      				}
+      				if (d.data.future === "读博") {
+      					//d3.select(this)
+      					this.style.fill = "#cca0c2"
+      					text = "即将读博"
+      				}
+      				if (d.data.future === "Gap") {
+      					//d3.select(this)
+      					this.style.fill = "#e2af8e"
+      					text = "选择Gap"
+      				}
+              id1 = "#people"
+              id2 = "#pieName"
+              count = d.data.count
+      				name = d.data.name
+      				coords = [d3.event.pageX, d3.event.pageY]
+      				showTooltip(text, coords, name, count)
+              showName(id1, id2, name)
+      			})
+      			.on("mousemove", function(d){
+      				d3.select(this)
+              if (d.data.future === "本科") {
+                
+                this.style.fill = "#78b8da"
+                text = "本科在读"
+                
+              }
+              if (d.data.future === "读研") {
+                //d3.select(this)
+                this.style.fill = "#a0d5c7"
+                text = "即将读研"
+
+              }
+              if (d.data.future === "读博") {
+                //d3.select(this)
+                this.style.fill = "#cca0c2"
+                text = "即将读博"
+              }
+              if (d.data.future === "Gap") {
+                //d3.select(this)
+                this.style.fill = "#e2af8e"
+                text = "选择Gap"
+              }
+      				id1 = "#people"
+              id2 = "#pieName"
+              count = d.data.count
+              name = d.data.name
+              coords = [d3.event.pageX, d3.event.pageY]
+              showTooltip(text, coords, name, count)
+              showName(id1, id2, name)
+      			})
+      			.on("mouseout", function(d){
+      				if (d.data.future === "本科") {
+      					d3.select(this)
+      					this.style.fill = "#65a9cc"
+      					
+      							
+      				}
+      				if (d.data.future === "读研") {
+      					d3.select(this)
+      					this.style.fill = "#8accba"
+      					
+      							
+      				}
+      				if (d.data.future === "读博") {
+      					d3.select(this)
+      					this.style.fill = "#c28fb7"
+      					
+      				}
+      				if (d.data.future === "Gap") {
+      					d3.select(this)
+      					this.style.fill = "#daa079"
+      					
+      				}
+      				d3.select(".tooltip").style("display", "none")
+      				d3.select("#pieName").text(null)
+      				d3.select("#people").text(null)
+      			})
+
+
+    }
+
+function showTooltip(text, coords, name, count){
+    	d3.select(".tooltip").text("少儿19班2020年" + text + "的人数为" + count + "人")	
+    		.style("top", coords[1] + 10 + "px")
+    		.style("left", coords[0] + 15 + "px")
+    		.style("display", "block")
+
+    	//d3.select("#people").text("学号为：")
+    	//d3.select("#pieName").text(name)
+    }
+function showName(id1, id2, name) {
+      d3.select(id1).text("学号为：")
+      d3.select(id2).text(name)
+}
+
+function groupByCountry(data){
+      var result = data.reduce((result, d) => {
+        var static = result[d.country] || {
+          "country": d.country,
+          "count": 0,
+          "status": d.future,
+          "name": []
+        }
+
+        static.count += 1
+        static.name.push(" " +d.name)
+/*
+        if (static.country === "China"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.country === "United States"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.country === "Singapore"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        if (static.country === "Netherlands"){
+          static.count += 1
+          static.name.push(" " +d.name)
+        }
+        
+*/        
+        result[d.country] = static
+        //console.log(result)
+        return result;
+      }, {})
+
+      result = Object.keys(result).map(key => result[key])
+      result = result.sort(function(a,b){
+            return d3.descending(a.count, b.count)
+        })
+      return result
+    }
+
+function drawBarChart(data) {
+      var container = d3.select("#barChart")
+      container.attr("width", width)
+              .attr("height", height)
+
+      var colorScale = d3.scaleOrdinal()
+                .range(["#65a9cc", "#8accba", "#c28fb7", "#daa079", "#9586be"])
+                .domain(data.map(d => d.country))
+
+      var max = d3.max(data, d => d.count)
+
+      //var subgroup = ["country","status"]
+
+      var xScale = d3.scaleLinear()
+                        .range([0, 250])
+                        .domain([0, max])
+
+      var yScale = d3.scaleBand()
+              .range([0, 250])
+              .domain(data.map(d => d.country))
+              .padding(0.3)
+
+      var yAxis = d3.axisLeft(yScale).ticks(4)
+
+      container.append("g")
+                    .style("transform", 
+                        `translate(${margin.left + 28}px,${margin.top+20}px)`
+                    )
+                    .call(yAxis)
+                    .style("color", "#efdea9")
+
+
+      container.selectAll("text")
+                    .style("color", "black")
+                    .style("font-family", "Times New Roman")
+/*
+      var color = d3.scaleOrdinal()
+			    .domain(subgroup)
+			    .range(["#a3c3cc","#65a9cc"])
+
+      var stackedData = d3.stack()
+					      .keys(subgroup)
+					      (data)
+*/
+      container//.append("g")
+              //.selectAll("g")
+              //.data(stackedData)
+              //.enter()
+              //.append("g")
+              //.attr("fill", d => color(d.count)
+              .selectAll("rect")
+              .data(data)
+              .enter()
+              .append("rect")
+              .attr("width", d => xScale(+d.count))
+              .attr("height", yScale.bandwidth())
+              .attr("y", (d) => yScale(d.country))
+              .attr("fill", d => colorScale(d.country))
+              .attr("transform", "translate(80, 30)")
+              .on("mouseover", function(d){
+              d3.select(this)
+              if (d.country === "China") {
+                
+                this.style.fill = "#78b8da"
+                text = "留在中国"
+                
+              }
+              if (d.country === "United States") {
+                //d3.select(this)
+                this.style.fill = "#a0d5c7"
+                text = "留学美国"
+
+              }
+              if (d.country === "United Kingdom") {
+                //d3.select(this)
+                this.style.fill = "#cca0c2"
+                text = "留学英国"
+              }
+
+              if (d.country === "Singapore") {
+                //d3.select(this)
+                this.style.fill = "#e2af8e"
+                text = "留学新加坡"
+              }
+              if (d.country === "Netherlands") {
+                //d3.select(this)
+                this.style.fill = "#9e95c2"
+                text = "留学荷兰"
+              }
+
+              id1 = "#peopleBar"
+              id2 = "#barName"
+              count = d.count
+              name = d.name
+              //console.log(name)
+              coords = [d3.event.pageX, d3.event.pageY]
+              showTooltip(text, coords, name, count)
+              showName(id1, id2, name)
+            })
+              .on("mousemove", function(d){
+              d3.select(this)
+              if (d.country === "China") {
+                
+                this.style.fill = "#78b8da"
+                text = "留在中国"
+                
+              }
+              if (d.country === "United States") {
+                //d3.select(this)
+                this.style.fill = "#a0d5c7"
+                text = "留学美国"
+
+              }
+              if (d.country === "United Kingdom") {
+                //d3.select(this)
+                this.style.fill = "#cca0c2"
+                text = "留学英国"
+              }
+
+              if (d.country === "Singapore") {
+                //d3.select(this)
+                this.style.fill = "#e2af8e"
+                text = "留学新加坡"
+              }
+              if (d.country === "Netherlands") {
+                //d3.select(this)
+                this.style.fill = "#9e95c2"
+                text = "留学荷兰"
+              }
+
+              id1 = "#peopleBar"
+              id2 = "#barName"
+              count = d.count
+              name = d.name
+              coords = [d3.event.pageX, d3.event.pageY]
+              showTooltip(text, coords, name, count)
+              showName(id1, id2, name)
+            })
+              .on("mouseout", function(d){
+              if (d.country === "China") {
+                d3.select(this)
+                this.style.fill = "#65a9cc"
+                
+                    
+              }
+              if (d.country === "United States") {
+                d3.select(this)
+                this.style.fill = "#8accba"
+                
+                    
+              }
+              if (d.country === "United Kingdom") {
+                d3.select(this)
+                this.style.fill = "#c28fb7"
+          
+                    
+              }
+              if (d.country === "Singapore") {
+                d3.select(this)
+                this.style.fill = "#daa079"
+                
+              }
+              if (d.country === "Netherlands") {
+                d3.select(this)
+                this.style.fill = "#9586be"
+                
+              }
+
+              d3.select(".tooltip").style("display", "none")
+              d3.select("#barName").text(null)
+              d3.select("#peopleBar").text(null)
+            })
+/*
+        var labels = container.selectAll("text.labels")
+                        .data(data, d => d.country)
+        console.log(labels)
+        labels.enter()
+              .append("text")
+            .attr("class", "labels")
+            .text(function(d) {
+                return d.country
+            })    
+            .attr("transform", function(d,i) {
+                    return "translate(" + xScale(+d.count) + "," + yScale(i) + ")"
+            })          
+            //.attr("dy", "1.2em")
+            //.attr("dx", "-3px")
+            .attr("text-anchor", "end");
+*/
+}
+
+function mapData(data) {
+
+ 
+      var result = data.reduce((result, d) => {
+        var static = result[d.location] || {
+          "location": d.location,
+          "count": 0,
+          "name": []
+        }
+        
+        	static.count += 1
+         	static.name.push(" " +d.name)
+   
+        result[d.location] = static
+        
+        return result;
+      }, {})
+
+
+      result = Object.keys(result).map(key => result[key])
+      console.log(result)
+
+      return result
+
+}
+
+function drawMap(data, usData) {
+
+      var result = mapData(usData)
+
+      var dataIndex = {}
+      for (c of result){
+        var loc = c.location
+        dataIndex[loc] = c.count
+      }
+
+      var nameIndex = {}
+      for (c of result){
+        var loc = c.location
+        nameIndex[loc] = c.name
+      }
+
+      console.log(nameIndex)
+
+      geoJson.features = geoJson.features.map(d => {
+        var loc = d.properties.name
+        var num = dataIndex[loc]
+        var ppl = nameIndex[loc]
+        d.properties.number = num
+        d.properties.people = ppl
+        return d
+        
+      })
+      
+      //max = d3.max(geoJson.features, d => d.properties.number)
+      mapCScale = d3.scaleOrdinal()
+                  .range(["#a3c3cc","#65a9cc", "#2d6c84"])
+                  .domain([1, 2, 3])
+
+
+	var container = d3.select("#map")
+
+	container.attr("width", width)
+			.attr("height", height)
+
+	var projection = d3.geoMercator()
+						.scale(380)
+						.translate([835, 425])
+
+	var path = d3.geoPath().projection(projection)
+
+  //var cScale = mapColor(usData)
+
+
+	container.selectAll("path")
+			.data(data)
+			.enter()
+			.append("path")
+			.attr("d", d => path(d))
+			.attr("stroke", "white")
+			.attr("fill", d => d.properties.number ? mapCScale(d.properties.number) 
+                        : "#efdea9")
+      .on("mouseover", mapOver)
+      .on("mousemove", mapMove)
+      .on("mouseout", mapOut)
+
+}
+
+function mapOver(d) {
+  if (d.properties.number != undefined) {
+    d3.select(this)
+    .style("stroke-width", 1.8)
+
+    coords = [d3.event.pageX, d3.event.pageY]
+
+    d3.select(".tooltip")
+      .text("2020年将就读于" + d.properties.name + "州的有:" + d.properties.people)
+      .style("top", coords[1] + 10 + "px")
+      .style("left", coords[0] + 15 + "px")
+      .style("display", "block")
+  }else {
+    coords = [d3.event.pageX, d3.event.pageY]
+    d3.select(".tooltip")
+      .text(d.properties.name + "州暂时没有少儿19班同学")
+      .style("top", coords[1] + 10 + "px")
+      .style("left", coords[0] + 15 + "px")
+      .style("display", "block")
+
+  }
+}
+
+function mapMove(d) {
+  if (d.properties.number != undefined) {
+    d3.select(this)
+    .style("stroke-width", 1.8)
+
+    coords = [d3.event.pageX, d3.event.pageY]
+
+    d3.select(".tooltip")
+      .text("2020年将就读于" + d.properties.name + "州的有:" + d.properties.people)
+      .style("top", coords[1] + 10 + "px")
+      .style("left", coords[0] + 15 + "px")
+      .style("display", "block")
+  }else {
+    coords = [d3.event.pageX, d3.event.pageY]
+    d3.select(".tooltip")
+      .text(d.properties.name + "州暂时没有同学")
+      .style("top", coords[1] + 10 + "px")
+      .style("left", coords[0] + 15 + "px")
+      .style("display", "block")
+
+  }
+}
+
+function mapOut(d) {
+  if (d.properties.number != undefined) {
+    d3.select(this)
+    .style("stroke-width", 1)
+  }
+  d3.select(".tooltip").style("display", "none")
+}
+  </script>
+</html>

@@ -1,0 +1,95 @@
+@font-face {
+	font-family:NaHan;
+	src: url('方正呐喊体.TTF');
+}
+@font-face {
+	font-family:QingKe;
+	src: url('方正清刻本悦宋简体.TTF');
+}
+@font-face {
+	font-family:ZhiYi;
+	src: url('方正稚艺简体.TTF');
+}
+@font-face {
+	font-family:XiYuan;
+	src: url('4112_方正细圆_GBK.TTF');
+}
+h1 {
+	font-family: NaHan;
+	font-size: 180px;
+	margin: 280px auto;
+}
+h2 {
+	font-family: QingKe;
+	font-size: 35px;
+}
+.hint {
+	color: #777777;
+	font-family: XiYuan;
+}
+body {
+  margin: 0;
+  text-align: center;
+  background-color: #efdea9;
+}
+#first {
+	/*margin-bottom: 50px; */
+	text-align: center;
+}
+.tooltip {
+	position: absolute;
+	display: none;
+	padding: 5px;
+	width: 150px;
+	text-align: left;
+	background-color: rgba(255,255,255,0.5);
+	border-radius: 5px;
+	font-family: QingKe;
+}
+#pieName{
+	/*position: absolute;*/
+	display: block;
+	height: 30px;
+	padding: 5px;
+	font-family: QingKe;
+
+}
+#people{
+	/*position: absolute;*/
+	display: block;
+	height: 30px;
+	font-family: QingKe;
+	margin-top: 10px;
+}
+#barName{
+	/*position: absolute;*/
+	display: block;
+	height: 30px;
+	padding: 5px;
+	font-family: QingKe;
+
+}
+#peopleBar{
+	/*position: absolute;*/
+	display: block;
+	height: 30px;
+	font-family: QingKe;
+	margin-top: 10px;
+}
+#maphint {
+	color: #777777;
+	font-family: XiYuan;
+	font-size: 13px;
+}
+#pieChart {
+	/*border: 1px solid black;*/
+}
+#barChart {
+	/*border: 1px solid black;*/
+}
+#map {
+	/*border: 1px solid black;*/
+}
+#sanKey {
+	border: 1px solid black;
+}
